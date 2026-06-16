@@ -1,32 +1,17 @@
 /*
  * This file is part of YumeBox.
- *
- * YumeBox is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * Copyright (c)  YumeLira 2025 - Present
- *
  */
-
-
 package com.github.yumelira.yumebox.screen.home
+
 import com.github.yumelira.yumebox.presentation.theme.UiDp
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -120,7 +105,6 @@ fun HomePager(
         }
     }
 
-
     val isRunning = controlState == HomeProxyControlState.Running
     val isProxyEnabled = profilesLoaded && profiles.isNotEmpty() && controlState.canInteract
 
@@ -155,9 +139,9 @@ fun HomePager(
                         .fillMaxWidth()
                         .padding(horizontal = AppConstants.UI.DEFAULT_HORIZONTAL_PADDING),
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(AppConstants.UI.DEFAULT_VERTICAL_SPACING)
+                    verticalArrangement = Arrangement.spacedBy(UiDp.dp16)
                 ) {
-
+                    // 流量显示 + 按钮
                     TrafficDisplay(
                         trafficNow = if (isRunning) {
                             TrafficData.from(trafficNow)
@@ -191,7 +175,8 @@ fun HomePager(
                         }
                     )
 
-                    SpeedChart(
+                    // 速度图表卡片
+                    SpeedChartCard(
                         speedHistory = speedHistory,
                         isRunning = isRunning,
                         animateIdle = isActive,
@@ -202,19 +187,63 @@ fun HomePager(
                         }
                     )
 
-                    Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp16)) {
+                    // 节点信息卡片
+                    InfoCard {
                         NodeInfoDisplay(
                             serverName = selectedServerName.takeIf { isRunning },
                             serverPing = selectedServerPing.takeIf { isRunning }
                         )
-                        IpInfoDisplay(
-                            state = ipMonitoringState
-                        )
+                    }
+
+                    // IP 信息卡片
+                    InfoCard {
+                        IpInfoDisplay(state = ipMonitoringState)
                     }
                 }
             }
 
             item { Spacer(modifier = Modifier.height(UiDp.dp32)) }
+        }
+    }
+}
+
+@Composable
+private fun SpeedChartCard(
+    speedHistory: List<Long>,
+    isRunning: Boolean,
+    animateIdle: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        SpeedChart(
+            speedHistory = speedHistory,
+            isRunning = isRunning,
+            animateIdle = animateIdle,
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .padding(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun InfoCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Box(modifier = Modifier.padding(16.dp)) {
+            content()
         }
     }
 }
