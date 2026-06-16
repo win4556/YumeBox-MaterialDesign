@@ -165,7 +165,7 @@ fun SurfboardHomePager(
                     SurfboardDashboardContent(
                         trafficNow = if (isRunning) TrafficData.from(trafficNow) else TrafficData.ZERO,
                         profileName = currentProfile?.name?.takeIf { isRunning },
-                        tunnelMode = tunnelMode.takeIf { isRunning },
+                        tunnelMode = tunnelMode?.name?.takeIf { isRunning },
                         controlState = controlState,
                         proxyMode = proxyMode,
                         serverName = selectedServerName.takeIf { isRunning },
@@ -274,9 +274,8 @@ private fun SurfboardDashboardContent(
         contentAlignment = Alignment.BottomEnd
     ) {
         FloatingActionButton(
-            onClick = onProxyToggle,
-            enabled = isProxyEnabled,
-            containerColor = MaterialTheme.colorScheme.primary,
+            onClick = { if (isProxyEnabled) onProxyToggle() },
+            containerColor = if (isProxyEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.38f),
             modifier = Modifier.padding(bottom = spacing.space16)
         ) {
             Icon(
