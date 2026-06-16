@@ -75,6 +75,7 @@ fun IpInfoDisplay(
                 ),
                 valueColor = MaterialTheme.colorScheme.onSurface,
                 countryCode = externalIp.countryCode,
+                isp = externalIp.isp,
                 isRevealable = true,
                 onToggleVisibility = { isIpVisible = !isIpVisible },
                 modifier = modifier
@@ -87,6 +88,7 @@ fun IpInfoDisplay(
                 value = "--",
                 valueColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 countryCode = null,
+                isp = null,
                 isRevealable = false,
                 onToggleVisibility = {},
                 modifier = modifier
@@ -101,6 +103,7 @@ private fun IpInfoRow(
     value: String,
     valueColor: Color,
     countryCode: String?,
+    isp: String?,
     isRevealable: Boolean,
     onToggleVisibility: () -> Unit,
     modifier: Modifier = Modifier
@@ -139,6 +142,16 @@ private fun IpInfoRow(
                     Modifier.height(INFO_TEXT_HEIGHT)
                 }
             )
+            if (isp != null) {
+                Spacer(modifier = Modifier.height(UiDp.dp2))
+                Text(
+                    text = isp,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         CountryBadge(countryCode = countryCode)
