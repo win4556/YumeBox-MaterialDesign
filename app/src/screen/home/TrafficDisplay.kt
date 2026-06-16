@@ -1,25 +1,6 @@
 /*
  * This file is part of YumeBox.
- *
- * YumeBox is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * Copyright (c)  YumeLira 2025 - Present
- *
  */
-
-
-
 package com.github.yumelira.yumebox.screen.home
 
 import androidx.compose.animation.AnimatedContent
@@ -57,6 +38,7 @@ import com.github.yumelira.yumebox.domain.model.TrafficData
 import com.github.yumelira.yumebox.presentation.icon.AppMd3Icons
 import com.github.yumelira.yumebox.presentation.theme.AppMotion
 import com.github.yumelira.yumebox.presentation.theme.AppTheme
+import com.github.yumelira.yumebox.presentation.theme.UiDp
 import dev.oom_wg.purejoy.mlang.MLang
 
 @Composable
@@ -73,66 +55,96 @@ fun TrafficDisplay(
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
 
-    val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(
-                enabled = isEnabled,
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = onClick
-            )
-            .padding(top = componentSizes.homeTrafficTopPadding, bottom = spacing.space16),
-        verticalArrangement = Arrangement.spacedBy(spacing.space24)
+            .padding(horizontal = AppConstants.UI.DEFAULT_HORIZONTAL_PADDING),
+        verticalArrangement = Arrangement.spacedBy(spacing.space16)
     ) {
-        DownloadSection(
-            downloadSpeed = trafficNow.download,
+        // 下载速度卡片
+        SpeedCard(
+            title = "DOWNLOAD",
+            speed = trafficNow.download,
             profileName = profileName,
             tunnelMode = tunnelMode
         )
 
-        OutboundModeSelector(
-            currentMode = tunnelMode,
-            onModeSelected = { /* TODO: 切换模式 */ }
-        )
-
+        // 上传速度
         UploadSection(
             uploadSpeed = trafficNow.upload,
             controlState = controlState,
-            proxyMode = proxyMode,
+            proxyMode = proxyMode
+        )
+
+        // 模式切换
+        OutboundModeSelector(currentMode = tunnelMode)
+
+        // 大按钮
+        StartButton(
+            controlState = controlState,
+            isEnabled = isEnabled,
+            onClick = onClick
         )
     }
 }
 
 @Composable
-private fun DownloadSection(
-    downloadSpeed: Long,
+private fun SpeedCard(
+    title: String,
+    speed: Long,
     profileName: String?,
     tunnelMode: TunnelState.Mode?
 ) {
     val spacing = AppTheme.spacing
-    val componentSizes = AppTheme.sizes
+    val opacity = AppTheme.opacity
+    val (value, unit) = formatBytesForDisplay(speed)
 
-    Column(horizontalAlignment = Alignment.Start) {
-        Row(
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = componentSizes.statusCapsuleHeight),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(spacing.space20),
+            verticalArrangement = Arrangement.spacedBy(spacing.space12)
         ) {
             Text(
-                text = "DOWNLOAD",
+                text = title,
                 style = MaterialTheme.typography.labelMedium.copy(fontSize = 14.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            ProfileModeBadge(profileName = profileName, tunnelMode = tunnelMode)
-        }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontSize = AppConstants.UI.TRAFFIC_FONT_SIZE,
+                            lineHeight = AppConstants.UI.TRAFFIC_FONT_SIZE
+                        ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = unit,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = AppConstants.UI.TRAFFIC_UNIT_FONT_SIZE
+                        ),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = opacity.medium),
+                        modifier = Modifier.padding(bottom = spacing.space14, start = spacing.space8)
+                    )
+                }
 
-        SpeedValue(speed = downloadSpeed)
+                if (profileName != null || tunnelMode != null) {
+                    ProfileModeBadge(profileName = profileName, tunnelMode = tunnelMode)
+                }
+            }
+        }
     }
 }
 
@@ -165,13 +177,11 @@ private fun ProfileModeBadge(
                 ),
                 color = MaterialTheme.colorScheme.primary
             )
-
             Box(
                 modifier = Modifier
                     .size(spacing.space4)
                     .background(MaterialTheme.colorScheme.primary, CircleShape)
             )
-
             Text(
                 text = tunnelMode.toDisplayName(),
                 style = MaterialTheme.typography.labelMedium.copy(
@@ -185,81 +195,166 @@ private fun ProfileModeBadge(
 }
 
 @Composable
-private fun SpeedValue(speed: Long) {
+private fun UploadSection(
+    uploadSpeed: Long,
+    controlState: HomeProxyControlState,
+    proxyMode: ProxyMode
+) {
     val spacing = AppTheme.spacing
-    val opacity = AppTheme.opacity
+    val (value, unit) = formatBytesForDisplay(uploadSpeed)
+    val isRunning = controlState == HomeProxyControlState.Running
 
-    val (value, unit) = formatBytesForDisplay(speed)
-    Row(verticalAlignment = Alignment.Bottom) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing.space12)
+        ) {
+            Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.space12)
+    ) {
         Text(
-            text = value,
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontSize = AppConstants.UI.TRAFFIC_FONT_SIZE,
-                lineHeight = AppConstants.UI.TRAFFIC_FONT_SIZE,
-                letterSpacing = AppConstants.UI.TRAFFIC_LETTER_SPACING
-            ),
+            text = "UPLOAD",
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 14.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "$value $unit",
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
             color = MaterialTheme.colorScheme.primary
         )
-        Text(
-            text = unit,
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontSize = AppConstants.UI.TRAFFIC_UNIT_FONT_SIZE
-            ),
-            color = MaterialTheme.colorScheme.primary.copy(alpha = opacity.medium),
-            modifier = Modifier.padding(bottom = spacing.space14, start = spacing.space8)
-        )
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(spacing.space8),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.animateContentSize(tween(AppMotion.DURATION_FAST, easing = AppMotion.EmphasizedDecelerate))
+    ) {
+        ProxyStatusCapsule(controlState = controlState)
+        AnimatedVisibility(
+            visible = isRunning,
+            enter = slideInHorizontally(
+                initialOffsetX = { it },
+                animationSpec = tween(AppMotion.DURATION_FAST, easing = AppMotion.EmphasizedDecelerate)
+            ) + fadeIn(tween(AppMotion.DURATION_FAST, easing = AppMotion.EnterEasing)),
+            exit = slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = tween(AppMotion.DURATION_INSTANT, easing = AppMotion.EmphasizedAccelerate)
+            ) + fadeOut(tween(AppMotion.DURATION_INSTANT, easing = AppMotion.ExitEasing))
+        ) {
+            ProxyTypeCapsule(proxyMode = proxyMode)
+        }
+            }
+        }
     }
 }
 
 @Composable
-private fun UploadSection(
-    uploadSpeed: Long,
-    controlState: HomeProxyControlState,
-    proxyMode: ProxyMode,
+private fun OutboundModeSelector(
+    currentMode: TunnelState.Mode?,
+    modifier: Modifier = Modifier
 ) {
     val spacing = AppTheme.spacing
+    val opacity = AppTheme.opacity
 
-    val (value, unit) = formatBytesForDisplay(uploadSpeed)
+    val modes = listOf(
+        TunnelState.Mode.Rule to "RULE-BASED",
+        TunnelState.Mode.Direct to "DIRECT",
+        TunnelState.Mode.Global to "GLOBAL"
+    )
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.space8)
+    ) {
+        modes.forEach { (mode, label) ->
+            val isSelected = currentMode == mode
+            val backgroundColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = opacity.subtle)
+            }
+            val textColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            Surface(
+                color = backgroundColor,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .clickable { /* TODO: 切换模式 */ }
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = textColor
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StartButton(
+    controlState: HomeProxyControlState,
+    isEnabled: Boolean,
+    onClick: () -> Unit
+) {
+    val spacing = AppTheme.spacing
     val isRunning = controlState == HomeProxyControlState.Running
-    Column(
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(spacing.space12)
+
+    val backgroundColor = if (isRunning) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+
+    Surface(
+        color = backgroundColor,
+        shape = RoundedCornerShape(50),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clickable(enabled = isEnabled) { onClick() }
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.space12)
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "UPLOAD",
-                style = MaterialTheme.typography.labelMedium.copy(fontSize = 14.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Icon(
+                imageVector = if (isRunning) AppMd3Icons.Home.StatusRunning else AppMd3Icons.Home.StatusIdle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(20.dp)
             )
+            Spacer(modifier = Modifier.width(spacing.space8))
             Text(
-                text = "$value $unit",
-                style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
-                color = MaterialTheme.colorScheme.primary
+                text = when (controlState) {
+                    HomeProxyControlState.Idle -> MLang.Home.Status.TapToStart
+                    HomeProxyControlState.Connecting -> MLang.Home.Status.Connecting
+                    HomeProxyControlState.Running -> MLang.Home.Status.Running
+                    HomeProxyControlState.Disconnecting -> MLang.Home.Status.Disconnecting
+                },
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onPrimary
             )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(spacing.space8),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.animateContentSize(tween(AppMotion.DURATION_FAST, easing = AppMotion.EmphasizedDecelerate))
-        ) {
-            ProxyStatusCapsule(controlState = controlState)
-            AnimatedVisibility(
-                visible = isRunning,
-                enter = slideInHorizontally(
-                    initialOffsetX = { it },
-                    animationSpec = tween(AppMotion.DURATION_FAST, easing = AppMotion.EmphasizedDecelerate)
-                ) + fadeIn(tween(AppMotion.DURATION_FAST, easing = AppMotion.EnterEasing)),
-                exit = slideOutHorizontally(
-                    targetOffsetX = { it },
-                    animationSpec = tween(AppMotion.DURATION_INSTANT, easing = AppMotion.EmphasizedAccelerate)
-                ) + fadeOut(tween(AppMotion.DURATION_INSTANT, easing = AppMotion.ExitEasing))
-            ) {
-                ProxyTypeCapsule(proxyMode = proxyMode)
-            }
         }
     }
 }
@@ -269,8 +364,8 @@ private fun ProxyTypeCapsule(proxyMode: ProxyMode) {
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
     val opacity = AppTheme.opacity
-
     val primary = MaterialTheme.colorScheme.primary
+
     Surface(
         color = primary.copy(alpha = opacity.subtle),
         shape = RoundedCornerShape(50),
@@ -312,8 +407,8 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState) {
     val spacing = AppTheme.spacing
     val componentSizes = AppTheme.sizes
     val opacity = AppTheme.opacity
-
     val primary = MaterialTheme.colorScheme.primary
+
     Surface(
         color = primary.copy(alpha = opacity.subtle),
         shape = RoundedCornerShape(50),
@@ -346,8 +441,7 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState) {
                     imageVector = when (state) {
                         HomeProxyControlState.Idle -> AppMd3Icons.Home.StatusIdle
                         HomeProxyControlState.Connecting,
-                        HomeProxyControlState.Disconnecting,
-                            -> AppMd3Icons.Home.StatusWaiting
+                        HomeProxyControlState.Disconnecting -> AppMd3Icons.Home.StatusWaiting
                         HomeProxyControlState.Running -> AppMd3Icons.Home.StatusRunning
                     },
                     contentDescription = null,
@@ -367,64 +461,6 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState) {
                     ),
                     color = primary
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun OutboundModeSelector(
-    currentMode: TunnelState.Mode?,
-    onModeSelected: (TunnelState.Mode) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val spacing = AppTheme.spacing
-    val opacity = AppTheme.opacity
-
-    val modes = listOf(
-        TunnelState.Mode.Rule to "RULE-BASED",
-        TunnelState.Mode.Direct to "DIRECT", 
-        TunnelState.Mode.Global to "GLOBAL"
-    )
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(spacing.space8)
-    ) {
-        modes.forEach { (mode, label) ->
-            val isSelected = currentMode == mode
-            val backgroundColor = if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = opacity.subtle)
-            }
-            val textColor = if (isSelected) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-
-            Surface(
-                color = backgroundColor,
-                shape = RoundedCornerShape(50),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(36.dp)
-                    .clickable { onModeSelected(mode) }
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = textColor
-                    )
-                }
             }
         }
     }
