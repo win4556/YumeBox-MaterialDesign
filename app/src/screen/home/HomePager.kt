@@ -191,16 +191,6 @@ fun HomePager(
                         }
                     )
 
-                    Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp16)) {
-                        NodeInfoDisplay(
-                            serverName = selectedServerName.takeIf { isRunning },
-                            serverPing = selectedServerPing.takeIf { isRunning }
-                        )
-                        IpInfoDisplay(
-                            state = ipMonitoringState
-                        )
-                    }
-
                     SpeedChart(
                         speedHistory = speedHistory,
                         isRunning = isRunning,
@@ -211,6 +201,16 @@ fun HomePager(
                             }
                         }
                     )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp16)) {
+                        NodeInfoDisplay(
+                            serverName = selectedServerName.takeIf { isRunning },
+                            serverPing = selectedServerPing.takeIf { isRunning }
+                        )
+                        IpInfoDisplay(
+                            state = ipMonitoringState
+                        )
+                    }
                 }
             }
 
