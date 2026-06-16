@@ -93,6 +93,11 @@ fun TrafficDisplay(
             tunnelMode = tunnelMode
         )
 
+        OutboundModeSelector(
+            currentMode = tunnelMode,
+            onModeSelected = { /* TODO: 切换模式 */ }
+        )
+
         UploadSection(
             uploadSpeed = trafficNow.upload,
             controlState = controlState,
@@ -362,6 +367,64 @@ private fun ProxyStatusCapsule(controlState: HomeProxyControlState) {
                     ),
                     color = primary
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OutboundModeSelector(
+    currentMode: TunnelState.Mode?,
+    onModeSelected: (TunnelState.Mode) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val spacing = AppTheme.spacing
+    val opacity = AppTheme.opacity
+
+    val modes = listOf(
+        TunnelState.Mode.Rule to "RULE-BASED",
+        TunnelState.Mode.Direct to "DIRECT", 
+        TunnelState.Mode.Global to "GLOBAL"
+    )
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.space8)
+    ) {
+        modes.forEach { (mode, label) ->
+            val isSelected = currentMode == mode
+            val backgroundColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = opacity.subtle)
+            }
+            val textColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            Surface(
+                color = backgroundColor,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(36.dp)
+                    .clickable { onModeSelected(mode) }
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = textColor
+                    )
+                }
             }
         }
     }
